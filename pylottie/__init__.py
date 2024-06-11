@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import asyncio
 from math import ceil
 from pathlib import Path
 from shutil import rmtree
@@ -211,10 +212,10 @@ async def recordLotties(lottieData: list[str], quality: int) -> list[list[int]]:
 		install(p.chromium)
 		browser = await p.chromium.launch()
 
-		frameData = [
-			await recordSingleLottie(browser, lottieDataInstance, quality, index)
+		frameData = await asyncio.gather(*[
+			recordSingleLottie(browser, lottieDataInstance, quality, index)
 			for index, lottieDataInstance in enumerate(lottieData)
-		]
+		])
 
 		await browser.close()
 
