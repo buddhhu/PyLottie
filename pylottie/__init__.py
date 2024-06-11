@@ -11,12 +11,12 @@ from shutil import rmtree
 
 from install_playwright import install
 from PIL import Image
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 
 THISDIR = str(Path(__file__).resolve().parent)
 
 
-def convertLottie2ALL(fileName: str, newFileName: str, quality: int = 1):
+async def convertLottie2ALL(fileName: str, newFileName: str, quality: int = 1):
 	"""Convert to gif and webp
 
 	Args:
@@ -26,10 +26,10 @@ def convertLottie2ALL(fileName: str, newFileName: str, quality: int = 1):
 		quality (int, optional): Quality of the returned sequence. Defaults to 1.
 
 	"""
-	convertMultLottie2ALL([fileName], [newFileName], quality)
+	await convertMultLottie2ALL([fileName], [newFileName], quality)
 
 
-def convertLottie2GIF(fileName: str, newFileName: str, quality: int = 1):
+async def convertLottie2GIF(fileName: str, newFileName: str, quality: int = 1):
 	"""Convert to gif
 
 	Args:
@@ -39,10 +39,10 @@ def convertLottie2GIF(fileName: str, newFileName: str, quality: int = 1):
 		quality (int, optional): Quality of the returned sequence. Defaults to 1.
 
 	"""
-	convertMultLottie2GIF([fileName], [newFileName], quality)
+	await convertMultLottie2GIF([fileName], [newFileName], quality)
 
 
-def convertLottie2Webp(fileName: str, newFileName: str, quality: int = 1):
+async def convertLottie2Webp(fileName: str, newFileName: str, quality: int = 1):
 	"""Convert to webp
 
 	Args:
@@ -52,10 +52,10 @@ def convertLottie2Webp(fileName: str, newFileName: str, quality: int = 1):
 		quality (int, optional): Quality of the returned sequence. Defaults to 1.
 
 	"""
-	convertMultLottie2Webp([fileName], [newFileName], quality)
+	await convertMultLottie2Webp([fileName], [newFileName], quality)
 
 
-def convertMultLottie2ALL(fileNames: list[str], newFileNames: list[str], quality: int = 1):
+async def convertMultLottie2ALL(fileNames: list[str], newFileNames: list[str], quality: int = 1):
 	"""Convert to gif and webp
 
 	Args:
@@ -65,7 +65,7 @@ def convertMultLottie2ALL(fileNames: list[str], newFileNames: list[str], quality
 		quality (int, optional): Quality of the returned sequence. Defaults to 1.
 
 	"""
-	imageDataList = convertLotties2PIL(fileNames, quality)
+	imageDataList = await convertLotties2PIL(fileNames, quality)
 	for index, imageData in enumerate(imageDataList):
 		images = imageData[0]
 		duration = imageData[1]
@@ -89,7 +89,7 @@ def convertMultLottie2ALL(fileNames: list[str], newFileNames: list[str], quality
 	rmtree("temp", ignore_errors=True)
 
 
-def convertMultLottie2GIF(fileNames: list[str], newFileNames: list[str], quality: int = 1):
+async def convertMultLottie2GIF(fileNames: list[str], newFileNames: list[str], quality: int = 1):
 	"""Convert to gif
 
 	Args:
@@ -99,7 +99,7 @@ def convertMultLottie2GIF(fileNames: list[str], newFileNames: list[str], quality
 		quality (int, optional): Quality of the returned sequence. Defaults to 1.
 
 	"""
-	imageDataList = convertLotties2PIL(fileNames, quality)
+	imageDataList = await convertLotties2PIL(fileNames, quality)
 	for index, imageData in enumerate(imageDataList):
 		images = imageData[0]
 		duration = imageData[1]
@@ -115,7 +115,7 @@ def convertMultLottie2GIF(fileNames: list[str], newFileNames: list[str], quality
 	rmtree("temp", ignore_errors=True)
 
 
-def convertMultLottie2Webp(fileNames: list[str], newFileNames: list[str], quality: int = 1):
+async def convertMultLottie2Webp(fileNames: list[str], newFileNames: list[str], quality: int = 1):
 	"""Convert to webp
 
 	Args:
@@ -125,7 +125,7 @@ def convertMultLottie2Webp(fileNames: list[str], newFileNames: list[str], qualit
 		quality (int, optional): Quality of the returned sequence. Defaults to 1.
 
 	"""
-	imageDataList = convertLotties2PIL(fileNames, quality)
+	imageDataList = await convertLotties2PIL(fileNames, quality)
 	for index, imageData in enumerate(imageDataList):
 		images = imageData[0]
 		duration = imageData[1]
@@ -146,7 +146,7 @@ def _resQuality(quality: int, numFrames: int, duration: int):
 	return ceil((numFrames / duration) / qualityMap[quality])
 
 
-def convertLotties2PIL(
+async def convertLotties2PIL(
 	fileNames: list[str], quality: int = 1
 ) -> list[tuple[list[Image.Image], float]]:
 	"""Convert list of lottie files to a list of images with a duration.
@@ -175,7 +175,7 @@ def convertLotties2PIL(
 			else:
 				lottie = json.loads(Path(fileName).read_text(encoding="utf-8"))
 		lotties.append(lottie)
-	frameData = recordLotties([json.dumps(lottie) for lottie in lotties], quality)
+	frameData = await recordLotties([json.dumps(lottie) for lottie in lotties], quality)
 
 	imageDataList = []
 	for index, frameDataInstance in enumerate(frameData):
@@ -189,7 +189,7 @@ def convertLotties2PIL(
 	return imageDataList
 
 
-def recordLotties(lottieData: list[str], quality: int) -> list[list[int]]:
+async def recordLotties(lottieData: list[str], quality: int) -> list[list[int]]:
 	"""Record the lottie data to a set of images
 
 	Args:
@@ -207,22 +207,22 @@ def recordLotties(lottieData: list[str], quality: int) -> list[list[int]]:
 		pass
 	else:
 		os.mkdir("temp")
-	with sync_playwright() as p:
+	async with async_playwright() as p:
 		install(p.chromium)
-		browser = p.chromium.launch()
+		browser = await p.chromium.launch()
 
 		frameData = [
-			recordSingleLottie(browser, lottieDataInstance, quality, index)
+			await recordSingleLottie(browser, lottieDataInstance, quality, index)
 			for index, lottieDataInstance in enumerate(lottieData)
 		]
 
-		browser.close()
+		await browser.close()
 
 	return frameData
 
 
-def recordSingleLottie(browser, lottieDataInstance, quality, index) -> list[int]:
-	page = browser.new_page()
+async def recordSingleLottie(browser, lottieDataInstance, quality, index) -> list[int]:
+	page = await browser.new_page()
 	lottie = json.loads(lottieDataInstance)
 	html = (
 		Path(THISDIR + "/lottie.html")
@@ -231,14 +231,14 @@ def recordSingleLottie(browser, lottieDataInstance, quality, index) -> list[int]
 		.replace("WIDTH", str(lottie["w"]))
 		.replace("HEIGHT", str(lottie["h"]))
 	)
-	page.set_content(html)
-	duration = page.evaluate("() => duration")
-	numFrames = page.evaluate("() => numFrames")
-	rootHandle = page.main_frame.wait_for_selector("#root")
+	await page.set_content(html)
+	duration = await page.evaluate("() => duration")
+	numFrames = await page.evaluate("() => numFrames")
+	rootHandle = await page.main_frame.wait_for_selector("#root")
 	# Take a screenshot of each frame
 	step = _resQuality(quality, numFrames, duration)
 	for frame in range(0, numFrames, step):
-		rootHandle.screenshot(path=f"temp/temp{index}_{frame}.png", omit_background=True)
-		page.evaluate(f"animation.goToAndStop({frame + 1}, true)")
-	page.close()
+		await rootHandle.screenshot(path=f"temp/temp{index}_{frame}.png", omit_background=True)
+		await page.evaluate(f"animation.goToAndStop({frame + 1}, true)")
+	await page.close()
 	return [duration, numFrames, step]
