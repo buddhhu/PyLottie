@@ -204,18 +204,17 @@ async def recordLotties(lottieData: list[str], quality: int) -> list[list[int]]:
 
 	"""
 	# Make temp dir
-	if os.path.isdir("temp"):
-		pass
-	else:
+	if not os.path.isdir("temp"):
 		os.mkdir("temp")
+
 	async with async_playwright() as p:
 		install(p.chromium)
 		browser = await p.chromium.launch()
 
-		frameData = await asyncio.gather(*[
-			recordSingleLottie(browser, lottieDataInstance, quality, index)
-			for index, lottieDataInstance in enumerate(lottieData)
-		])
+		frameData = await asyncio.gather(
+            *[recordSingleLottie(browser, lottieDataInstance, quality, index)
+              for index, lottieDataInstance in enumerate(lottieData)]
+        )
 
 		await browser.close()
 
